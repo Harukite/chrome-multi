@@ -28,7 +28,7 @@ echo 8. Close all Chrome profiles
 echo 9. Exit
 echo.
 
-set /p choice="Enter your choice (1-8): "
+set /p choice="Enter your choice (1-9): "
 
 if "%choice%"=="1" goto create_profile
 if "%choice%"=="2" goto batch_create_profile
