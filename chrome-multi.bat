@@ -1,10 +1,22 @@
 @echo off
 setlocal EnableDelayedExpansion
 
+:: 获取屏幕分辨率
+for /f "tokens=2 delims==" %%a in ('wmic desktopmonitor get screenwidth /value') do set "screen_width=%%a"
+for /f "tokens=2 delims==" %%a in ('wmic desktopmonitor get screenheight /value') do set "screen_height=%%a"
+
 :: 设置Chrome路径和配置文件存储位置
 set "CHROME_PATH=C:\Program Files\Google\Chrome\Application\chrome.exe"
 set "PROFILES_DIR=E:\chromeduokai\ChromeProfiles"
 set "DESKTOP_DIR=%USERPROFILE%\Desktop"
+
+:: 设置浏览器窗口大小
+set "window_width=400"
+set "window_height=400"
+
+:: 计算每行可以放置的浏览器数量
+set /a columns=(screen_width / window_width)
+if %columns% leq 0 set columns=1
 
 :: 检查Chrome是否存在
 if not exist "%CHROME_PATH%" (
@@ -92,10 +104,38 @@ pause
 goto menu
 
 :open_all_profiles
+@REM echo.
+@REM echo Opening all created Chrome profiles...
+@REM for /d %%p in ("%PROFILES_DIR%\*") do (
+@REM     start "" "%CHROME_PATH%" --user-data-dir="%%p" --title="Profile %%p" --no-first-run --no-default-browser-check --window-size=800,600
+@REM )
+
 echo.
 echo Opening all created Chrome profiles...
+
+:: 重置计数器
+set /a x=0
+set /a y=0
+set /a count=0
+
 for /d %%p in ("%PROFILES_DIR%\*") do (
-    start "" "%CHROME_PATH%" --user-data-dir="%%p" --title="Profile %%p" --no-first-run --no-default-browser-check
+    :: 计算窗口位置
+    set /a x_pos=!x! * %window_width%
+    set /a y_pos=!y! * %window_height%
+
+    :: 启动浏览器并指定窗口位置和大小
+    start "" "%CHROME_PATH%" --user-data-dir="%%p" --title="Profile %%p" --window-position=!x_pos!,!y_pos! --window-size=%window_width%,%window_height% --no-first-run --no-default-browser-check
+
+    :: 更新位置计数器
+    set /a count+=1
+    set /a x+=1
+    if !x! geq %columns% (
+        set /a x=0
+        set /a y+=1
+    )
+
+    :: 可选：添加小延迟防止系统过载
+    timeout /t 1 /nobreak > nul
 )
 echo All profiles opened.
 pause
@@ -151,7 +191,7 @@ if not exist "%PROFILES_DIR%\%profile_name%" (
     goto menu
 )
 
-start "" "%CHROME_PATH%" --user-data-dir="%PROFILES_DIR%\%profile_name%" --title="Profile %profile_name%" --no-first-run --no-default-browser-check
+start "" "%CHROME_PATH%" --user-data-dir="%PROFILES_DIR%\%profile_name%" --title="Profile %profile_name%" --no-first-run --no-default-browser-check --window-size=600,600
 goto menu
 
 :list_profiles
